@@ -38,4 +38,6 @@
 1. The output should be similar to:
 	```bash
 	RabbitMQ:RMQ_URL = amqp://<username>:<password>@<hostname>:5672/
+	MailTrap:USERNAME = <username>
+	MailTrap:PASSWORD = <password>
 	```
