@@ -4,6 +4,6 @@
     <DebuggerFlavor>ProjectDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup>
-    <ActiveDebugProfile>Email_API</ActiveDebugProfile>
+    <ActiveDebugProfile>Container (Dockerfile)</ActiveDebugProfile>
   </PropertyGroup>
 </Project>
