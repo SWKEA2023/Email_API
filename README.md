@@ -25,6 +25,7 @@
 1. Open a terminal in the project directory
 1. Run the following commands:
 	```bash
+	dotnet user-secrets init
 	dotnet user-secrets set "RabbitMQ:RMQ_URL" "amqp://<username>:<password>@<hostname>:5672/"
 	dotnet user-secrets set "MailTrap:USERNAME" "<username>"
 	dotnet user-secrets set "MailTrap:PASSWORD" "<password>"
