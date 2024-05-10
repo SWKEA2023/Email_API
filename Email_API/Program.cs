@@ -13,61 +13,47 @@ internal class Program
 
     private static void Main()
     {
-        var rabbitURL = Environment.GetEnvironmentVariable("RMQ_URL");
+        var rabbitUrl = Environment.GetEnvironmentVariable("RMQ_URL");
+        var declineQueue = Environment.GetEnvironmentVariable("TRANSACTION_QUEUE");
+        var successQueue = Environment.GetEnvironmentVariable("ADMIN_QUEUE");
 
-        // var builder = new ConfigurationBuilder()
-        //     .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
-        //     .AddUserSecrets<Program>();
+        InitializeSmtpClient();
 
-        // _configuration = builder.Build();
-
-        if (rabbitURL != null)
+        // var url = _configuration["RabbitMQ:RMQ_URL"];
+        var factory = new ConnectionFactory()
         {
-            var declineQueue = Environment.GetEnvironmentVariable("transaction_api.error");
-            var successQueue = Environment.GetEnvironmentVariable("admin_api.success");
+            Uri = new Uri(rabbitUrl ?? throw new ArgumentNullException())
+        };
 
-            InitializeSmtpClient();
+        using (var connection = factory.CreateConnection())
+        using (var channel = connection.CreateModel())
+        {
+            channel.QueueDeclare(queue: declineQueue, durable: false, exclusive: false, autoDelete: false, arguments: null);
+            channel.QueueDeclare(queue: successQueue, durable: false, exclusive: false, autoDelete: false, arguments: null);
 
-            // var url = _configuration["RabbitMQ:RMQ_URL"];
-            var factory = new ConnectionFactory()
+            var errorConsumer = new EventingBasicConsumer(channel);
+            errorConsumer.Received += (model, ea) =>
             {
-                Uri = new Uri(rabbitURL),
+                var body = ea.Body.ToArray();
+                var message = System.Text.Encoding.UTF8.GetString(body);
+                Console.WriteLine(" [x] Error Received {0}", message);
+                SendFailureEmail();
             };
+            channel.BasicConsume(queue: declineQueue, autoAck: true, consumer: errorConsumer);
 
-            using (var connection = factory.CreateConnection())
-            using (var channel = connection.CreateModel())
+            var successConsumer = new EventingBasicConsumer(channel);
+            successConsumer.Received += (model, ea) =>
             {
-                channel.QueueDeclare(queue: declineQueue, durable: false, exclusive: false, autoDelete: false, arguments: null);
-                channel.QueueDeclare(queue: successQueue, durable: false, exclusive: false, autoDelete: false, arguments: null);
+                var body = ea.Body.ToArray();
+                var message = System.Text.Encoding.UTF8.GetString(body);
+                Console.WriteLine(" [x] Success Received {0}", message);
+                SendSuccessEmail();
+            };
+            channel.BasicConsume(queue: successQueue, autoAck: true, consumer: successConsumer);
 
-                var errorConsumer = new EventingBasicConsumer(channel);
-                errorConsumer.Received += (model, ea) =>
-                {
-                    var body = ea.Body.ToArray();
-                    var message = System.Text.Encoding.UTF8.GetString(body);
-                    Console.WriteLine(" [x] Error Received {0}", message);
-                    SendFailureEmail();
-                };
-                channel.BasicConsume(queue: declineQueue, autoAck: true, consumer: errorConsumer);
-
-                var successConsumer = new EventingBasicConsumer(channel);
-                successConsumer.Received += (model, ea) =>
-                {
-                    var body = ea.Body.ToArray();
-                    var message = System.Text.Encoding.UTF8.GetString(body);
-                    Console.WriteLine(" [x] Success Received {0}", message);
-                    SendSuccessEmail();
-                };
-                channel.BasicConsume(queue: successQueue, autoAck: true, consumer: successConsumer);
-
-                Console.WriteLine("Application started. Press Ctrl+C to exit.");
-                ManualResetEvent resetEvent = new ManualResetEvent(false);
-                resetEvent.WaitOne();
-            }
-        }
-        else
-        {
-            Console.WriteLine("RMQ_URL environment variable is not set.");
+            Console.WriteLine("Application started. Press Ctrl+C to exit.");
+            ManualResetEvent resetEvent = new ManualResetEvent(false);
+            resetEvent.WaitOne();
         }
     }
 
