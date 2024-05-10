@@ -1,23 +1,16 @@
-#See https://aka.ms/customizecontainer to learn how to customize your debug container and how Visual Studio uses this Dockerfile to build your images for faster debugging.
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build-env
+WORKDIR /source
 
-FROM mcr.microsoft.com/dotnet/runtime:8.0 AS base
-USER app
-WORKDIR /app
-
-FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
-ARG BUILD_CONFIGURATION=Release
-WORKDIR /src
-COPY ["Email_API/Email_API.csproj", "Email_API/"]
-RUN dotnet restore "./Email_API/Email_API.csproj"
 COPY . .
-WORKDIR "/src/Email_API"
-RUN dotnet build "./Email_API.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
-FROM build AS publish
-ARG BUILD_CONFIGURATION=Release
-RUN dotnet publish "./Email_API.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
+# Restore as distinct layers
+RUN dotnet restore "./Email_API.csproj" --disable-parallel
 
-FROM base AS final
+# Build and publish a release
+RUN dotnet publish "./Email_API.csproj" -c release -o /app --no-restore
+
+# Build runtime image
+FROM mcr.microsoft.com/dotnet/aspnet:8.0
 WORKDIR /app
-COPY --from=publish /app/publish .
+COPY --from=build-env /app ./
 ENTRYPOINT ["dotnet", "Email_API.dll"]

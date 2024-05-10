@@ -13,58 +13,74 @@ internal class Program
 
     private static void Main()
     {
-        var builder = new ConfigurationBuilder()
-            .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
-            .AddUserSecrets<Program>();
+        var rabbitURL = Environment.GetEnvironmentVariable("RMQ_URL");
 
-        _configuration = builder.Build();
+        // var builder = new ConfigurationBuilder()
+        //     .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
+        //     .AddUserSecrets<Program>();
 
-        InitializeSmtpClient();
+        // _configuration = builder.Build();
 
-        var url = _configuration["RabbitMQ:RMQ_URL"];
-        var factory = new ConnectionFactory()
+        if (rabbitURL != null)
         {
-            Uri = new Uri(url ?? throw new Exception()),
-        };
+            var declineQueue = Environment.GetEnvironmentVariable("TRANSACTION_DECLINE_QUEUE");
+            var successQueue = Environment.GetEnvironmentVariable("TRANSACTION_SUCCESS_QUEUE");
 
-        using (var connection = factory.CreateConnection())
-        using (var channel = connection.CreateModel())
-        {
-            channel.QueueDeclare(queue: "errorQueue", durable: false, exclusive: false, autoDelete: false, arguments: null);
-            channel.QueueDeclare(queue: "successQueue", durable: false, exclusive: false, autoDelete: false, arguments: null);
+            InitializeSmtpClient();
 
-            var errorConsumer = new EventingBasicConsumer(channel);
-            errorConsumer.Received += (model, ea) =>
+            // var url = _configuration["RabbitMQ:RMQ_URL"];
+            var factory = new ConnectionFactory()
             {
-                var body = ea.Body.ToArray();
-                var message = System.Text.Encoding.UTF8.GetString(body);
-                Console.WriteLine(" [x] Error Received {0}", message);
-                SendFailureEmail();
+                Uri = new Uri(rabbitURL),
             };
-            channel.BasicConsume(queue: "errorQueue", autoAck: true, consumer: errorConsumer);
 
-            var successConsumer = new EventingBasicConsumer(channel);
-            successConsumer.Received += (model, ea) =>
+            using (var connection = factory.CreateConnection())
+            using (var channel = connection.CreateModel())
             {
-                var body = ea.Body.ToArray();
-                var message = System.Text.Encoding.UTF8.GetString(body);
-                Console.WriteLine(" [x] Success Received {0}", message);
-                SendSuccessEmail();
-            };
-            channel.BasicConsume(queue: "successQueue", autoAck: true, consumer: successConsumer);
+                channel.QueueDeclare(queue: declineQueue, durable: false, exclusive: false, autoDelete: false, arguments: null);
+                channel.QueueDeclare(queue: successQueue, durable: false, exclusive: false, autoDelete: false, arguments: null);
 
-            Console.WriteLine(" Press [enter] to exit.");
-            Console.ReadLine();
+                var errorConsumer = new EventingBasicConsumer(channel);
+                errorConsumer.Received += (model, ea) =>
+                {
+                    var body = ea.Body.ToArray();
+                    var message = System.Text.Encoding.UTF8.GetString(body);
+                    Console.WriteLine(" [x] Error Received {0}", message);
+                    SendFailureEmail();
+                };
+                channel.BasicConsume(queue: "errorQueue", autoAck: true, consumer: errorConsumer);
+
+                var successConsumer = new EventingBasicConsumer(channel);
+                successConsumer.Received += (model, ea) =>
+                {
+                    var body = ea.Body.ToArray();
+                    var message = System.Text.Encoding.UTF8.GetString(body);
+                    Console.WriteLine(" [x] Success Received {0}", message);
+                    SendSuccessEmail();
+                };
+                channel.BasicConsume(queue: "successQueue", autoAck: true, consumer: successConsumer);
+
+                Console.WriteLine("Application started. Press Ctrl+C to exit.");
+                ManualResetEvent resetEvent = new ManualResetEvent(false);
+                resetEvent.WaitOne();
+            }
         }
+        else
+        {
+            Console.WriteLine("RMQ_URL environment variable is not set.");
+        }
+
     }
 
     private static void InitializeSmtpClient()
     {
+        var mail_username = Environment.GetEnvironmentVariable("MAIL_USERNAME");
+        var mail_password = Environment.GetEnvironmentVariable("MAIL_PASSWORD");
         _smtpClient = new SmtpClient("sandbox.smtp.mailtrap.io", 2525)
         {
             Credentials = new NetworkCredential(
-                _configuration["MailTrap:USERNAME"],
-                _configuration["MailTrap:PASSWORD"]),
+                userName: mail_username,
+                password: mail_password),
             EnableSsl = true
         };
     }
@@ -73,8 +89,8 @@ internal class Program
     {
         try
         {
-            _smtpClient.Send("6230fc3602-52e247@inbox.mailtrap.io", "to@example.com", "Your ticket purchase was not successful", "There was an error with your transaction. \n\nPlease ensure that you have sufficient money on your account.");
-            Console.WriteLine("Sent");
+            // _smtpClient.Send("6230fc3602-52e247@inbox.mailtrap.io", "to@example.com", "Your ticket purchase was not successful", "There was an error with your transaction. \n\nPlease ensure that you have sufficient money on your account.");
+            Console.WriteLine("Decline Email send");
         }
         catch (Exception ex)
         {
@@ -86,8 +102,8 @@ internal class Program
     {
         try
         {
-            _smtpClient.Send("6230fc3602-52e247@inbox.mailtrap.io", "to@example.com", "Your ticket purchase was successful", "Here is your ticket information.");
-            Console.WriteLine("Sent");
+            // _smtpClient.Send("6230fc3602-52e247@inbox.mailtrap.io", "to@example.com", "Your ticket purchase was successful", "Here is your ticket information.");
+            Console.WriteLine("Success Email send");
         }
         catch (Exception ex)
         {
