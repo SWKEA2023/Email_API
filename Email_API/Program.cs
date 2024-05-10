@@ -23,8 +23,8 @@ internal class Program
 
         if (rabbitURL != null)
         {
-            var declineQueue = Environment.GetEnvironmentVariable("TRANSACTION_DECLINE_QUEUE");
-            var successQueue = Environment.GetEnvironmentVariable("TRANSACTION_SUCCESS_QUEUE");
+            var declineQueue = Environment.GetEnvironmentVariable("transaction_api.error");
+            var successQueue = Environment.GetEnvironmentVariable("admin_api.success");
 
             InitializeSmtpClient();
 
@@ -48,7 +48,7 @@ internal class Program
                     Console.WriteLine(" [x] Error Received {0}", message);
                     SendFailureEmail();
                 };
-                channel.BasicConsume(queue: "errorQueue", autoAck: true, consumer: errorConsumer);
+                channel.BasicConsume(queue: declineQueue, autoAck: true, consumer: errorConsumer);
 
                 var successConsumer = new EventingBasicConsumer(channel);
                 successConsumer.Received += (model, ea) =>
@@ -58,7 +58,7 @@ internal class Program
                     Console.WriteLine(" [x] Success Received {0}", message);
                     SendSuccessEmail();
                 };
-                channel.BasicConsume(queue: "successQueue", autoAck: true, consumer: successConsumer);
+                channel.BasicConsume(queue: successQueue, autoAck: true, consumer: successConsumer);
 
                 Console.WriteLine("Application started. Press Ctrl+C to exit.");
                 ManualResetEvent resetEvent = new ManualResetEvent(false);
@@ -69,7 +69,6 @@ internal class Program
         {
             Console.WriteLine("RMQ_URL environment variable is not set.");
         }
-
     }
 
     private static void InitializeSmtpClient()
@@ -102,7 +101,7 @@ internal class Program
     {
         try
         {
-            // _smtpClient.Send("6230fc3602-52e247@inbox.mailtrap.io", "to@example.com", "Your ticket purchase was successful", "Here is your ticket information.");
+            // _smtpClient.Send("6230fc3602-52e247@inbox.mailtrap.io", Order.Customer.Mail, "Your ticket purchase was successful", "Here is your ticket information.");
             Console.WriteLine("Success Email send");
         }
         catch (Exception ex)
