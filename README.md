@@ -8,8 +8,8 @@
 	RMQ_URL=<amqp://<username>:<password>@<hostname>:5672/v_host>
 	MAIL_USERNAME=<email_username>
 	MAIL_PASSWORD=<email_password>
-	transaction_api.error
-	admin_api.success
+	TRANSACTION_QUEUE=<queue_name>
+	ADMIN_QUEUE=<queue_name>
 ````
 
 ### With Visual Studio

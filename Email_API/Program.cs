@@ -19,7 +19,6 @@ internal class Program
 
         InitializeSmtpClient();
 
-        // var url = _configuration["RabbitMQ:RMQ_URL"];
         var factory = new ConnectionFactory()
         {
             Uri = new Uri(rabbitUrl ?? throw new ArgumentNullException())
@@ -59,13 +58,13 @@ internal class Program
 
     private static void InitializeSmtpClient()
     {
-        var mail_username = Environment.GetEnvironmentVariable("MAIL_USERNAME");
-        var mail_password = Environment.GetEnvironmentVariable("MAIL_PASSWORD");
+        var mailUsername = Environment.GetEnvironmentVariable("MAIL_USERNAME");
+        var mailPassword = Environment.GetEnvironmentVariable("MAIL_PASSWORD");
         _smtpClient = new SmtpClient("sandbox.smtp.mailtrap.io", 2525)
         {
             Credentials = new NetworkCredential(
-                userName: mail_username,
-                password: mail_password),
+                userName: mailUsername,
+                password: mailPassword),
             EnableSsl = true
         };
     }
