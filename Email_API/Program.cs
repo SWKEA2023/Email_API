@@ -27,8 +27,8 @@ internal class Program
         using (var connection = factory.CreateConnection())
         using (var channel = connection.CreateModel())
         {
-            channel.QueueDeclare(queue: declineQueue, durable: false, exclusive: false, autoDelete: false, arguments: null);
-            channel.QueueDeclare(queue: successQueue, durable: false, exclusive: false, autoDelete: false, arguments: null);
+            channel.QueueDeclare(queue: declineQueue, durable: true, exclusive: false, autoDelete: false, arguments: null);
+            channel.QueueDeclare(queue: successQueue, durable: true, exclusive: false, autoDelete: false, arguments: null);
 
             var errorConsumer = new EventingBasicConsumer(channel);
             errorConsumer.Received += (model, ea) =>
@@ -73,7 +73,7 @@ internal class Program
     {
         try
         {
-            // _smtpClient.Send("6230fc3602-52e247@inbox.mailtrap.io", "to@example.com", "Your ticket purchase was not successful", "There was an error with your transaction. \n\nPlease ensure that you have sufficient money on your account.");
+            _smtpClient.Send("6230fc3602-52e247@inbox.mailtrap.io", "to@example.com", "Your ticket purchase was not successful", "There was an error with your transaction. \n\nPlease ensure that you have sufficient money on your account.");
             Console.WriteLine("Decline Email send");
         }
         catch (Exception ex)
@@ -86,7 +86,7 @@ internal class Program
     {
         try
         {
-            // _smtpClient.Send("6230fc3602-52e247@inbox.mailtrap.io", Order.Customer.Mail, "Your ticket purchase was successful", "Here is your ticket information.");
+            _smtpClient.Send("6230fc3602-52e247@inbox.mailtrap.io", "to@example.com", "Your ticket purchase was successful", "Here is your ticket information.");
             Console.WriteLine("Success Email send");
         }
         catch (Exception ex)
