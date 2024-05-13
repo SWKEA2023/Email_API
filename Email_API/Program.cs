@@ -70,16 +70,24 @@ internal class Program
 
     private static void SendFailureEmail(string jsonMessage)
     {
+        var ticketInfo = System.Text.Json.JsonSerializer.Deserialize<TicketMessage>(jsonMessage);
+        if (ticketInfo == null)
+        {
+            Console.WriteLine("Failed to parse ticket information.");
+            return;
+        }
+
+        var customer = ticketInfo.Data?.Order?.Customer;
+        if (customer == null)
+        {
+            Console.WriteLine("Customer information is missing.");
+            return;
+        }
+
+        Console.WriteLine($"Customer Info: {System.Text.Json.JsonSerializer.Serialize(customer)}");
+
         try
         {
-            var ticketInfo = System.Text.Json.JsonSerializer.Deserialize<TicketMessage>(jsonMessage);
-            if (ticketInfo == null) throw new InvalidOperationException("Failed to parse ticket information.");
-
-            var customer = ticketInfo.Data?.Order?.Customer;
-            if (customer == null) throw new InvalidOperationException("Customer information is missing.");
-
-            Console.WriteLine($"Customer Info: {System.Text.Json.JsonSerializer.Serialize(customer)}");
-
             string subject = "Important: Issue with Your Ticket Purchase";
             string body = $"Dear {customer.FirstName} {customer.LastName},\n\n" +
                           "We're sorry to inform you that your recent attempt to purchase tickets through CinemaHub was not successful. The transaction failed due to insufficient funds in your account.\n\n" +
@@ -103,28 +111,33 @@ internal class Program
 
     private static void SendSuccessEmail(string jsonMessage)
     {
+        var ticketInfo = System.Text.Json.JsonSerializer.Deserialize<TicketMessage>(jsonMessage);
+        if (ticketInfo == null)
+        {
+            Console.WriteLine("Failed to parse ticket information.");
+            return;
+        }
+
+        var customer = ticketInfo.Data?.Order?.Customer;
+        var screening = ticketInfo.Data?.Screening;
+        var seat = ticketInfo.Data?.Seat;
+        var movie = screening?.Movie;
+        var hall = screening?.Hall;
+
+        if (customer == null || screening == null || seat == null || movie == null || hall == null)
+        {
+            Console.WriteLine("Necessary information is missing from the ticket message.");
+            return;
+        }
+
+        Console.WriteLine($"Customer Info: {System.Text.Json.JsonSerializer.Serialize(customer)}");
+        Console.WriteLine($"Screening Info: {System.Text.Json.JsonSerializer.Serialize(screening)}");
+        Console.WriteLine($"Seat Info: {System.Text.Json.JsonSerializer.Serialize(seat)}");
+        Console.WriteLine($"Movie Info: {System.Text.Json.JsonSerializer.Serialize(movie)}");
+        Console.WriteLine($"Hall Info: {System.Text.Json.JsonSerializer.Serialize(hall)}");
+
         try
         {
-            var ticketInfo = System.Text.Json.JsonSerializer.Deserialize<TicketMessage>(jsonMessage);
-            if (ticketInfo == null) throw new InvalidOperationException("Failed to parse ticket information.");
-
-            var customer = ticketInfo.Data?.Order?.Customer;
-            var screening = ticketInfo.Data?.Screening;
-            var seat = ticketInfo.Data?.Seat;
-            var movie = screening?.Movie;
-            var hall = screening?.Hall;
-
-            if (customer == null || screening == null || seat == null || movie == null || hall == null)
-            {
-                throw new InvalidOperationException("Necessary information is missing from the ticket message.");
-            }
-
-            Console.WriteLine($"Customer Info: {System.Text.Json.JsonSerializer.Serialize(customer)}");
-            Console.WriteLine($"Screening Info: {System.Text.Json.JsonSerializer.Serialize(screening)}");
-            Console.WriteLine($"Seat Info: {System.Text.Json.JsonSerializer.Serialize(seat)}");
-            Console.WriteLine($"Movie Info: {System.Text.Json.JsonSerializer.Serialize(movie)}");
-            Console.WriteLine($"Hall Info: {System.Text.Json.JsonSerializer.Serialize(hall)}");
-
             string subject = $"Your ticket for {movie.Title} is confirmed!";
             string body = $"Dear {customer.FirstName} {customer.LastName},\n" +
                           $"Your ticket for '{movie.Title}' on {screening.StartTime} at {hall.HallName} is confirmed.\n" +
@@ -139,4 +152,5 @@ internal class Program
             Console.WriteLine($"Failed to send success email: {ex.Message}");
         }
     }
+
 }
