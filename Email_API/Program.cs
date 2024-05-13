@@ -75,7 +75,10 @@ internal class Program
             var ticketInfo = System.Text.Json.JsonSerializer.Deserialize<TicketMessage>(jsonMessage);
             if (ticketInfo == null) throw new InvalidOperationException("Failed to parse ticket information.");
 
-            var customer = ticketInfo.Data.Order.Customer;
+            var customer = ticketInfo.Data?.Order?.Customer;
+            if (customer == null) throw new InvalidOperationException("Customer information is missing.");
+
+            Console.WriteLine($"Customer Info: {System.Text.Json.JsonSerializer.Serialize(customer)}");
 
             string subject = "Important: Issue with Your Ticket Purchase";
             string body = $"Dear {customer.FirstName} {customer.LastName},\n\n" +
@@ -88,7 +91,6 @@ internal class Program
                           "We apologize for any inconvenience and thank you for your understanding.\n\n" +
                           "Warm regards,\n" +
                           "The CinemaHub Team";
-
 
             _smtpClient.Send("6230fc3602-52e247@inbox.mailtrap.io", customer.Email, subject, body);
             Console.WriteLine("Decline Email sent");
@@ -106,11 +108,22 @@ internal class Program
             var ticketInfo = System.Text.Json.JsonSerializer.Deserialize<TicketMessage>(jsonMessage);
             if (ticketInfo == null) throw new InvalidOperationException("Failed to parse ticket information.");
 
-            var customer = ticketInfo.Data.Order.Customer;
-            var screening = ticketInfo.Data.Screening;
-            var seat = ticketInfo.Data.Seat;
-            var movie = screening.Movie;
-            var hall = screening.Hall;
+            var customer = ticketInfo.Data?.Order?.Customer;
+            var screening = ticketInfo.Data?.Screening;
+            var seat = ticketInfo.Data?.Seat;
+            var movie = screening?.Movie;
+            var hall = screening?.Hall;
+
+            if (customer == null || screening == null || seat == null || movie == null || hall == null)
+            {
+                throw new InvalidOperationException("Necessary information is missing from the ticket message.");
+            }
+
+            Console.WriteLine($"Customer Info: {System.Text.Json.JsonSerializer.Serialize(customer)}");
+            Console.WriteLine($"Screening Info: {System.Text.Json.JsonSerializer.Serialize(screening)}");
+            Console.WriteLine($"Seat Info: {System.Text.Json.JsonSerializer.Serialize(seat)}");
+            Console.WriteLine($"Movie Info: {System.Text.Json.JsonSerializer.Serialize(movie)}");
+            Console.WriteLine($"Hall Info: {System.Text.Json.JsonSerializer.Serialize(hall)}");
 
             string subject = $"Your ticket for {movie.Title} is confirmed!";
             string body = $"Dear {customer.FirstName} {customer.LastName},\n" +
