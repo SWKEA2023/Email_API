@@ -79,13 +79,14 @@ internal class Program
         }
 
         var customer = ticketInfo.Data?.Order?.Customer;
+
+        Console.WriteLine($"Customer Info: {System.Text.Json.JsonSerializer.Serialize(customer)}");
+
         if (customer == null)
         {
             Console.WriteLine("Customer information is missing.");
             return;
         }
-
-        Console.WriteLine($"Customer Info: {System.Text.Json.JsonSerializer.Serialize(customer)}");
 
         try
         {
@@ -136,7 +137,6 @@ internal class Program
             Console.WriteLine("Necessary information is missing from the ticket message.");
             return;
         }
-
 
         try
         {
