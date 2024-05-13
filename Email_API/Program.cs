@@ -71,6 +71,7 @@ internal class Program
     private static void SendFailureEmail(string jsonMessage)
     {
         var ticketInfo = System.Text.Json.JsonSerializer.Deserialize<TicketMessage>(jsonMessage);
+
         if (ticketInfo == null)
         {
             Console.WriteLine("Failed to parse ticket information.");
@@ -124,17 +125,18 @@ internal class Program
         var movie = screening?.Movie;
         var hall = screening?.Hall;
 
+        Console.WriteLine($"Customer Info: {System.Text.Json.JsonSerializer.Serialize(customer)}");
+        Console.WriteLine($"Screening Info: {System.Text.Json.JsonSerializer.Serialize(screening)}");
+        Console.WriteLine($"Seat Info: {System.Text.Json.JsonSerializer.Serialize(seat)}");
+        Console.WriteLine($"Movie Info: {System.Text.Json.JsonSerializer.Serialize(movie)}");
+        Console.WriteLine($"Hall Info: {System.Text.Json.JsonSerializer.Serialize(hall)}");
+
         if (customer == null || screening == null || seat == null || movie == null || hall == null)
         {
             Console.WriteLine("Necessary information is missing from the ticket message.");
             return;
         }
 
-        Console.WriteLine($"Customer Info: {System.Text.Json.JsonSerializer.Serialize(customer)}");
-        Console.WriteLine($"Screening Info: {System.Text.Json.JsonSerializer.Serialize(screening)}");
-        Console.WriteLine($"Seat Info: {System.Text.Json.JsonSerializer.Serialize(seat)}");
-        Console.WriteLine($"Movie Info: {System.Text.Json.JsonSerializer.Serialize(movie)}");
-        Console.WriteLine($"Hall Info: {System.Text.Json.JsonSerializer.Serialize(hall)}");
 
         try
         {
@@ -152,5 +154,4 @@ internal class Program
             Console.WriteLine($"Failed to send success email: {ex.Message}");
         }
     }
-
 }

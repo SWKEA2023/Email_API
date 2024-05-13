@@ -4,4 +4,5 @@
     public Screening Screening { get; set; }
     public Seat Seat { get; set; }
     public int TicketId { get; set; }
+    public DateTime createdAt { get; set; }
 }
