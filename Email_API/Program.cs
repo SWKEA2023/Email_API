@@ -1,16 +1,21 @@
-﻿using Microsoft.Extensions.Configuration;
-using RabbitMQ.Client;
+﻿using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using System.Net;
 using System.Net.Mail;
 
 namespace Email_API;
 
+/// <summary>
+/// Main class of the application.
+/// </summary>
 internal class Program
 {
-    public static IConfiguration _configuration { get; set; }
     private static SmtpClient _smtpClient;
 
+    /// <summary>
+    /// Main entrypoint of the application.
+    /// </summary>
+    /// <exception cref="ArgumentNullException"></exception>
     private static void Main()
     {
         var rabbitUrl = Environment.GetEnvironmentVariable("RMQ_URL");
@@ -56,6 +61,9 @@ internal class Program
         }
     }
 
+    /// <summary>
+    /// Initializes the SMTP client.
+    /// </summary>
     private static void InitializeSmtpClient()
     {
         var mailUsername = Environment.GetEnvironmentVariable("MAIL_USERNAME");
@@ -69,6 +77,9 @@ internal class Program
         };
     }
 
+    /// <summary>
+    /// Sends an email to the user when the transaction was not successful.
+    /// </summary>
     private static void SendFailureEmail()
     {
         try
@@ -82,6 +93,9 @@ internal class Program
         }
     }
 
+    /// <summary>
+    /// Sends an email to the user when the transaction was successful.
+    /// </summary>
     private static void SendSuccessEmail()
     {
         try
