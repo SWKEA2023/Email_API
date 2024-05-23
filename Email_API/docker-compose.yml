@@ -3,7 +3,7 @@ services:
     image: emailapi
     build: .
     environment:
-      - RMQ_URL=amqp://admin:password123@172.18.0.2:5672/my_vhost
+      - RMQ_URL=amqp://admin:password123@rabbitmq:5672/my_vhost
       - MAIL_USERNAME=4c2c762e7cc636
       - MAIL_PASSWORD=ac9a0e1b58d9e4
       - TRANSACTION_QUEUE=email_api.declined

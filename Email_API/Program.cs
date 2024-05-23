@@ -1,5 +1,6 @@
 ﻿using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
+using System.Dynamic;
 using System.Net;
 using System.Net.Mail;
 
@@ -70,23 +71,23 @@ internal class Program
 
     private static void SendFailureEmail(string jsonMessage)
     {
-        var ticketInfo = System.Text.Json.JsonSerializer.Deserialize<TicketMessage>(jsonMessage);
-
+        dynamic ticketInfo = System.Text.Json.JsonSerializer.Deserialize<ExpandoObject>(jsonMessage);
         if (ticketInfo == null)
         {
             Console.WriteLine("Failed to parse ticket information.");
             return;
         }
 
-        var customer = ticketInfo.Data?.Order?.Customer;
+        Console.WriteLine($"Full Ticket Info: {System.Text.Json.JsonSerializer.Serialize(ticketInfo)}");
 
-        Console.WriteLine($"Customer Info: {System.Text.Json.JsonSerializer.Serialize(customer)}");
-
+        var customer = MapCustomer(ticketInfo.data.order.customer);
         if (customer == null)
         {
             Console.WriteLine("Customer information is missing.");
             return;
         }
+
+        Console.WriteLine($"Customer Info: {System.Text.Json.JsonSerializer.Serialize(customer)}");
 
         try
         {
@@ -113,36 +114,36 @@ internal class Program
 
     private static void SendSuccessEmail(string jsonMessage)
     {
-        var ticketInfo = System.Text.Json.JsonSerializer.Deserialize<TicketMessage>(jsonMessage);
+        dynamic ticketInfo = System.Text.Json.JsonSerializer.Deserialize<ExpandoObject>(jsonMessage);
         if (ticketInfo == null)
         {
             Console.WriteLine("Failed to parse ticket information.");
             return;
         }
 
-        var customer = ticketInfo.Data?.Order?.Customer;
-        var screening = ticketInfo.Data?.Screening;
-        var seat = ticketInfo.Data?.Seat;
-        var movie = screening?.Movie;
-        var hall = screening?.Hall;
+        Console.WriteLine($"Full Ticket Info: {System.Text.Json.JsonSerializer.Serialize(ticketInfo)}");
 
-        Console.WriteLine($"Customer Info: {System.Text.Json.JsonSerializer.Serialize(customer)}");
-        Console.WriteLine($"Screening Info: {System.Text.Json.JsonSerializer.Serialize(screening)}");
-        Console.WriteLine($"Seat Info: {System.Text.Json.JsonSerializer.Serialize(seat)}");
-        Console.WriteLine($"Movie Info: {System.Text.Json.JsonSerializer.Serialize(movie)}");
-        Console.WriteLine($"Hall Info: {System.Text.Json.JsonSerializer.Serialize(hall)}");
+        var customer = MapCustomer(ticketInfo.data.order.customer);
+        var screening = MapScreening(ticketInfo.data.screening);
+        var seat = MapSeat(ticketInfo.data.seat);
 
-        if (customer == null || screening == null || seat == null || movie == null || hall == null)
+        if (customer == null || screening == null || seat == null || screening.Movie == null || screening.Hall == null)
         {
             Console.WriteLine("Necessary information is missing from the ticket message.");
             return;
         }
 
+        Console.WriteLine($"Customer Info: {System.Text.Json.JsonSerializer.Serialize(customer)}");
+        Console.WriteLine($"Screening Info: {System.Text.Json.JsonSerializer.Serialize(screening)}");
+        Console.WriteLine($"Seat Info: {System.Text.Json.JsonSerializer.Serialize(seat)}");
+        Console.WriteLine($"Movie Info: {System.Text.Json.JsonSerializer.Serialize(screening.Movie)}");
+        Console.WriteLine($"Hall Info: {System.Text.Json.JsonSerializer.Serialize(screening.Hall)}");
+
         try
         {
-            string subject = $"Your ticket for {movie.Title} is confirmed!";
+            string subject = $"Your ticket for {screening.Movie.Title} is confirmed!";
             string body = $"Dear {customer.FirstName} {customer.LastName},\n" +
-                          $"Your ticket for '{movie.Title}' on {screening.StartTime} at {hall.HallName} is confirmed.\n" +
+                          $"Your ticket for '{screening.Movie.Title}' on {screening.StartTime} at {screening.Hall.HallName} is confirmed.\n" +
                           $"Seat: Row {seat.SeatRow}, Number {seat.SeatNumber}\n" +
                           $"Enjoy your movie!\n";
 
@@ -153,5 +154,73 @@ internal class Program
         {
             Console.WriteLine($"Failed to send success email: {ex.Message}");
         }
+    }
+
+    private static Customer MapCustomer(dynamic customer)
+    {
+        if (customer == null) return null;
+        return new Customer
+        {
+            FirstName = customer.firstName,
+            LastName = customer.lastName,
+            Email = customer.email,
+            PhoneNumber = customer.phoneNumber,
+            CustomerId = customer.customerId,
+            CreatedAt = customer.createdAt
+        };
+    }
+
+    private static Screening MapScreening(dynamic screening)
+    {
+        if (screening == null) return null;
+        return new Screening
+        {
+            Date = screening.date,
+            StartTime = screening.startTime,
+            EndTime = screening.endTime,
+            Hall = MapHall(screening.hall),
+            Movie = MapMovie(screening.movie)
+        };
+    }
+
+    private static Seat MapSeat(dynamic seat)
+    {
+        if (seat == null) return null;
+        return new Seat
+        {
+            SeatRow = seat.seatRow,
+            SeatNumber = seat.seatNumber,
+            Price = seat.price,
+            Hall = MapHall(seat.hall)
+        };
+    }
+
+    private static Movie MapMovie(dynamic movie)
+    {
+        if (movie == null) return null;
+        return new Movie
+        {
+            Title = movie.title,
+            Director = movie.director,
+            Year = movie.year,
+            Language = movie.language,
+            Duration = movie.duration,
+            Pegi = movie.pegi,
+            ImageURL = movie.imageURL,
+            TrailerURL = movie.trailerURL
+        };
+    }
+
+    private static Hall MapHall(dynamic hall)
+    {
+        if (hall == null) return null;
+        return new Hall
+        {
+            HallId = hall.hallId,
+            HallName = hall.hallName,
+            SeatRows = hall.seatRows,
+            SeatNumber = hall.seatNumber,
+            CreatedAt = hall.createdAt
+        };
     }
 }
