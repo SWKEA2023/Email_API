@@ -55,7 +55,7 @@ internal class Program
             };
             channel.BasicConsume(queue: successQueue, autoAck: true, consumer: successConsumer);
 
-            Console.WriteLine("Application started. Press Ctrl+C to exit.");
+            Console.WriteLine("Application started.");
             ManualResetEvent resetEvent = new ManualResetEvent(false);
             resetEvent.WaitOne();
         }
